@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: >
+      Raw nightly extracts of the ERP, loaded as-is (COPY INTO on Snowflake,
+      generator/load_bronze_duckdb.py locally). Append-only: every batch is kept.
+    schema: bronze
+    loaded_at_field: loaded_at
+    freshness:
+      warn_after: {count: 26, period: hour}
+      error_after: {count: 50, period: hour}
+    tables:
+      - name: daily_sales
+        description: Order lines aggregated to day x customer x product x branch x rep x channel.
+      - name: orders
+      - name: shipments
+      - name: invoices
+      - name: payments
+      - name: purchase_orders
+      - name: customers
+      - name: products
+      - name: suppliers
+      - name: branches
+      - name: sales_reps
+      - name: calendar

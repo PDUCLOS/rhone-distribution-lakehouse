@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: silver_customers
+    description: Latest version of each customer. `is_missing_postal_code` flags a known source defect.
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+      - name: segment
+        tests:
+          - accepted_values:
+              arguments: {values: [BTP, Industrie, Maintenance]}
+      - name: branch_id
+        tests:
+          - relationships:
+              arguments: {to: ref('silver_branches'), field: branch_id}
+
+  - name: silver_products
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+      - name: supplier_id
+        tests:
+          - relationships:
+              arguments: {to: ref('silver_suppliers'), field: supplier_id}
+
+  - name: silver_suppliers
+    columns:
+      - name: supplier_id
+        tests: [unique, not_null]
+
+  - name: silver_branches
+    columns:
+      - name: branch_id
+        tests: [unique, not_null]
+
+  - name: silver_sales_reps
+    columns:
+      - name: rep_id
+        tests: [unique, not_null]
+
+  - name: silver_calendar
+    columns:
+      - name: calendar_date
+        tests: [unique, not_null]
+
+  - name: silver_daily_sales
+    description: Daily sales at extract grain, deduplicated across batches, with anomaly flags.
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [sale_date, customer_id, product_id, branch_id, rep_id, channel]
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('silver_customers'), field: customer_id}
+      - name: product_id
+        tests:
+          - relationships:
+              arguments: {to: ref('silver_products'), field: product_id}
+
+  - name: silver_orders
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              arguments: {values: [created, shipped, invoiced, paid]}
+
+  - name: silver_shipments
+    columns:
+      - name: shipment_id
+        tests: [unique, not_null]
+
+  - name: silver_invoices
+    description: Latest version of each invoice. `is_orphan` = no matching order (source defect).
+    columns:
+      - name: invoice_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              arguments: {values: [open, paid, disputed]}
+
+  - name: silver_payments
+    columns:
+      - name: payment_id
+        tests: [unique, not_null]
+      - name: invoice_id
+        tests:
+          - relationships:
+              arguments: {to: ref('silver_invoices'), field: invoice_id}
+
+  - name: silver_purchase_orders
+    columns:
+      - name: purchase_order_id
+        tests: [unique, not_null]
+
+  - name: silver_quarantine
+    description: One row per record failing a business rule. Checked against the generator's ground truth.
+    columns:
+      - name: anomaly_type
+        tests: [not_null]

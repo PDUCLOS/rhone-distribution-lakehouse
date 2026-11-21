@@ -1,0 +1,20 @@
+# Copy to ./profiles.yml (git-ignored) and export the env vars.
+rhone_distribution:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: warehouse.duckdb
+      schema: main
+      threads: 4
+
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: RD_TRANSFORMER
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'RD_WH') }}"
+      database: RHONE
+      schema: SILVER
+      threads: 4

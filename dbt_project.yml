@@ -1,0 +1,33 @@
+name: rhone_distribution
+version: "1.0.0"
+config-version: 2
+profile: rhone_distribution
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+vars:
+  # Days of daily_sales reprocessed on each incremental run (late batches)
+  incremental_lookback_days: 3
+  # A customer with no order in this many days is considered lost (ML label)
+  churn_horizon_days: 90
+
+seeds:
+  rhone_distribution:
+    +schema: silver
+    anomaly_manifest:
+      +column_types:
+        expected_count: integer
+
+models:
+  rhone_distribution:
+    silver:
+      +schema: silver
+      +materialized: table
+    gold:
+      +schema: gold
+      +materialized: table
+      # Snowflake only: re-attach masking and row access policies after each rebuild
+      +post-hook: "{{ apply_security_policies() }}"

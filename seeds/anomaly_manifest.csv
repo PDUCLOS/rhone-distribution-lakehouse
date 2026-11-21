@@ -1,0 +1,6 @@
+anomaly_type,source_table,expected_count
+zero_price_line,erp.sales_order_lines,25
+negative_qty_not_flagged_as_return,erp.sales_order_lines,12
+shipped_before_order,erp.shipments,15
+orphan_invoice,erp.invoices,10
+customer_missing_postal_code,erp.customers,8

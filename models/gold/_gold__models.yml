@@ -1,0 +1,174 @@
+version: 2
+
+# meta.row_access / meta.masking are applied on Snowflake by the
+# apply_security_policies post-hook (see sql/snowflake/02_security.sql).
+
+models:
+  - name: dim_agence
+    description: Les 5 agences de Rhône Distribution.
+    columns:
+      - name: agence_id
+        tests: [unique, not_null]
+
+  - name: dim_commercial
+    columns:
+      - name: commercial_id
+        tests: [unique, not_null]
+
+  - name: dim_fournisseur
+    columns:
+      - name: fournisseur_id
+        tests: [unique, not_null]
+
+  - name: dim_produit
+    config:
+      meta:
+        masking: {cout_achat_2024: finance_masking}
+    columns:
+      - name: produit_id
+        tests: [unique, not_null]
+      - name: cout_achat_2024
+        meta: {classification: confidentiel_finance}
+
+  - name: dim_client
+    description: Clients professionnels (fictifs). Contacts = données personnelles (RGPD), masqués selon le rôle.
+    config:
+      meta:
+        row_access: agence_id
+        masking:
+          contact_nom: pii_masking
+          contact_email: pii_masking
+          contact_telephone: pii_masking
+          limite_credit: finance_masking
+    columns:
+      - name: client_id
+        tests: [unique, not_null]
+      - name: code_postal
+        description: Null pour les fiches incomplètes (code_postal_manquant), listées en quarantaine.
+      - name: contact_email
+        meta: {classification: pii}
+      - name: contact_telephone
+        meta: {classification: pii}
+      - name: limite_credit
+        meta: {classification: confidentiel_finance}
+
+  - name: dim_date
+    columns:
+      - name: date
+        tests: [unique, not_null]
+
+  - name: fct_ventes_jour
+    description: Ventes au grain jour × client × produit × agence × commercial × canal (incrémental).
+    config:
+      meta:
+        row_access: agence_id
+        masking:
+          cout_achat: finance_masking
+          marge_brute: finance_masking
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [date_vente, client_id, produit_id, agence_id, commercial_id, canal]
+    columns:
+      - name: client_id
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_client'), field: client_id}
+      - name: produit_id
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_produit'), field: produit_id}
+      - name: agence_id
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_agence'), field: agence_id}
+      - name: date_vente
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date}
+      - name: ca_net
+        description: Chiffre d'affaires HT net de remises et de retours.
+
+  - name: fct_factures
+    config:
+      meta:
+        row_access: agence_id
+    columns:
+      - name: facture_id
+        tests: [unique, not_null]
+      - name: client_id
+        tests:
+          - relationships:
+              arguments: {to: ref('dim_client'), field: client_id}
+      - name: type_document
+        tests:
+          - accepted_values:
+              arguments: {values: [facture, avoir]}
+      - name: reste_a_payer
+        tests:
+          - is_between:
+              arguments: {min_value: -0.01}
+              config: {where: "type_document = 'facture'"}
+
+  - name: agg_ca_marge_mensuel
+    config:
+      meta:
+        row_access: agence_id
+        masking: {marge_brute: finance_masking, taux_marge: finance_masking}
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [mois, agence_id, famille]
+    columns:
+      - name: taux_marge
+        tests:
+          - is_between:
+              arguments: {min_value: -1, max_value: 1}
+
+  - name: agg_taux_service
+    config:
+      meta:
+        row_access: agence_id
+    columns:
+      - name: taux_service
+        tests:
+          - is_between:
+              arguments: {min_value: 0, max_value: 1}
+
+  - name: agg_performance_fournisseurs
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [mois, fournisseur_id]
+
+  - name: agg_balance_agee
+    description: Balance âgée des créances clients à la dernière date de facturation.
+    config:
+      meta:
+        row_access: agence_id
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [client_id, agence_id]
+
+  - name: agg_dso_mensuel
+    config:
+      meta:
+        row_access: agence_id
+    columns:
+      - name: dso_jours
+        tests:
+          - is_between:
+              arguments: {min_value: 0, max_value: 365}
+
+  - name: ml_churn_features
+    description: Snapshot mensuel par client pour le modèle de churn (Snowpark ML). Label null = horizon non observé.
+    tests:
+      - unique_combination:
+          arguments:
+            columns: [client_id, date_snapshot]
+    columns:
+      - name: label_churn
+        tests:
+          - accepted_values:
+              arguments: {values: [0, 1], quote: false}

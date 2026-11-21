@@ -1,0 +1,82 @@
+name: Pipeline CI + docs site
+
+# Replays the whole slow path on every push: simulate the ERP, load it into a
+# real PostgreSQL, run the nightly extract, load bronze, dbt build (all tests,
+# including the injected-anomaly ground truth), then publish the dbt docs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rhone_erp
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DSN: postgresql://postgres:postgres@localhost:5432/rhone_erp
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Simulate the ERP (seed 42)
+        run: |
+          python generator/generate_erp.py
+          cmp data/generated/anomaly_manifest.csv seeds/anomaly_manifest.csv
+
+      - name: Load PostgreSQL and run the nightly extract
+        run: |
+          python generator/load_postgres.py --dsn "$DSN"
+          python generator/extract_daily.py --backfill --dsn "$DSN"
+          python generator/extract_daily.py --date 2026-10-29 --dsn "$DSN"
+
+      - name: Bronze -> Silver -> Gold (dbt build on DuckDB)
+        run: |
+          cp profiles.example.yml profiles.yml
+          python generator/load_bronze_duckdb.py
+          dbt build --profiles-dir .
+
+      - name: Docs site
+        run: |
+          dbt docs generate --static --profiles-dir .
+          mkdir -p site && cp target/static_index.html site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

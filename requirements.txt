@@ -1,0 +1,10 @@
+numpy>=2
+pandas>=2.2
+pyarrow>=15
+duckdb>=1.1
+psycopg[binary]>=3.2
+requests>=2.31
+dbt-duckdb>=1.10,<2
+# Snowflake path (optional locally, required for make snowflake-*)
+# dbt-snowflake>=1.10,<2
+# snowflake-connector-python>=3.12
