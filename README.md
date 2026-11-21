@@ -97,6 +97,9 @@ make docs                # site de documentation + graphe de lignage
 
 ## Sur Snowflake
 
+> **Prochaine étape :** connexion à un compte Snowflake (l'ancien compte d'essai a expiré) et configuration.
+> Les identifiants vont dans un fichier `.env` local, copié depuis [`.env.example`](.env.example) et jamais versionné.
+
 1. Exécuter [`sql/snowflake/01_setup.sql`](sql/snowflake/01_setup.sql) (base, schémas, stage, tables Bronze, procédure de chargement, Task), puis [`02_security.sql`](sql/snowflake/02_security.sql).
 2. Exporter `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` et `SNOWFLAKE_PASSWORD`, puis installer `dbt-snowflake` et `snowflake-connector-python`.
 3. Lancer `make snowflake-push` (PUT + COPY INTO), puis `make snowflake-build` (dbt build ; les policies sont posées par le post-hook).
