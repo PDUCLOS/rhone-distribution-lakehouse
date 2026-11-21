@@ -11,7 +11,7 @@ Databricks pour le pilotage opérationnel en quasi temps réel, Power BI en rest
 > Aucun nom d'entreprise ni SIREN réel n'est associé à un historique simulé. Les e-mails utilisent `example.com` et les téléphones la plage réservée à la fiction par l'ARCEP.
 
 > **Statut :** flux lent construit avec **dbt Core** et validé de bout en bout **en local** (PostgreSQL + DuckDB, 64 tests, rejoué à chaque push par la CI).
-> Scripts Snowflake (chargement, Task, rôles, row access, masking, tags) écrits et prêts, **pas encore exécutés sur un compte Snowflake** (compte d'essai expiré).
+> Scripts Snowflake (chargement, Task, rôles, row access, masking, tags) écrits et prêts, **pas encore exécutés sur un compte Snowflake**.
 > Flux Databricks et rapports Power BI : prévus.
 
 ## La question métier
@@ -97,9 +97,6 @@ make docs                # site de documentation + graphe de lignage
 
 ## Sur Snowflake
 
-> **Prochaine étape :** connexion à un compte Snowflake (l'ancien compte d'essai a expiré) et configuration.
-> Les identifiants vont dans un fichier `.env` local, copié depuis [`.env.example`](.env.example) et jamais versionné.
-
 1. Exécuter [`sql/snowflake/01_setup.sql`](sql/snowflake/01_setup.sql) (base, schémas, stage, tables Bronze, procédure de chargement, Task), puis [`02_security.sql`](sql/snowflake/02_security.sql).
 2. Exporter `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER` et `SNOWFLAKE_PASSWORD`, puis installer `dbt-snowflake` et `snowflake-connector-python`.
 3. Lancer `make snowflake-push` (PUT + COPY INTO), puis `make snowflake-build` (dbt build ; les policies sont posées par le post-hook).
@@ -121,7 +118,7 @@ docs/        architecture, schéma draw.io
 - [x] ERP simulé et réaliste, PostgreSQL, extract nocturne agrégé
 - [x] Bronze / Silver / Gold avec dbt, 64 tests dont la vérité terrain, CI
 - [x] Scripts Snowflake : chargement idempotent, Task, RBAC, row access, masking, tags
-- [ ] Première exécution sur Snowflake et vérification des policies rôle par rôle (scripts prêts, compte d'essai expiré)
+- [ ] Première exécution sur Snowflake et vérification des policies rôle par rôle
 - [ ] Flux rapide Databricks : émetteur d'événements, Auto Loader, pipeline déclaratif
 - [ ] Rapports Power BI (DAF / commercial sur Snowflake, ops live sur Databricks)
 - [ ] Modèle de churn sous Snowpark ML
