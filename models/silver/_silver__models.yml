@@ -16,6 +16,8 @@ models:
               arguments: {to: ref('silver_branches'), field: branch_id}
 
   - name: silver_products
+
+    description: "Produits, typés et dédoublonnés."
     columns:
       - name: product_id
         tests: [unique, not_null]
@@ -25,21 +27,29 @@ models:
               arguments: {to: ref('silver_suppliers'), field: supplier_id}
 
   - name: silver_suppliers
+
+    description: "Fournisseurs, typés et dédoublonnés."
     columns:
       - name: supplier_id
         tests: [unique, not_null]
 
   - name: silver_branches
+
+    description: "Agences, typées et dédoublonnées."
     columns:
       - name: branch_id
         tests: [unique, not_null]
 
   - name: silver_sales_reps
+
+    description: "Commerciaux, typés et dédoublonnés."
     columns:
       - name: rep_id
         tests: [unique, not_null]
 
   - name: silver_calendar
+
+    description: "Calendrier source, typé."
     columns:
       - name: calendar_date
         tests: [unique, not_null]
@@ -62,6 +72,8 @@ models:
               arguments: {to: ref('silver_products'), field: product_id}
 
   - name: silver_orders
+
+    description: "Commandes clients, typées et dédoublonnées (dernière version de chaque commande)."
     columns:
       - name: order_id
         tests: [unique, not_null]
@@ -71,6 +83,8 @@ models:
               arguments: {values: [created, shipped, invoiced, paid]}
 
   - name: silver_shipments
+
+    description: "Expéditions, dernière version de chacune ; les expéditions datées avant leur commande sont repérées (is_shipped_before_order)."
     columns:
       - name: shipment_id
         tests: [unique, not_null]
@@ -86,6 +100,8 @@ models:
               arguments: {values: [open, paid, disputed]}
 
   - name: silver_payments
+
+    description: "Paiements clients, typés et dédoublonnés."
     columns:
       - name: payment_id
         tests: [unique, not_null]
@@ -95,6 +111,8 @@ models:
               arguments: {to: ref('silver_invoices'), field: invoice_id}
 
   - name: silver_purchase_orders
+
+    description: "Commandes d'achat fournisseurs, typées et dédoublonnées."
     columns:
       - name: purchase_order_id
         tests: [unique, not_null]

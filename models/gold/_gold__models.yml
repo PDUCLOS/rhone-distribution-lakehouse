@@ -11,16 +11,22 @@ models:
         tests: [unique, not_null]
 
   - name: dim_commercial
+
+    description: "Les commerciaux, rattachés à une agence."
     columns:
       - name: commercial_id
         tests: [unique, not_null]
 
   - name: dim_fournisseur
+
+    description: "Les fournisseurs (fictifs)."
     columns:
       - name: fournisseur_id
         tests: [unique, not_null]
 
   - name: dim_produit
+
+    description: "Catalogue produits par famille. Le coût d'achat est une donnée financière, masquée selon le rôle."
     config:
       meta:
         masking: {cout_achat_2024: finance_masking}
@@ -53,6 +59,8 @@ models:
         meta: {classification: confidentiel_finance}
 
   - name: dim_date
+
+    description: "Calendrier (jours, mois, années) pour l'analyse dans le temps."
     columns:
       - name: date
         tests: [unique, not_null]
@@ -90,6 +98,8 @@ models:
         description: Chiffre d'affaires HT net de remises et de retours.
 
   - name: fct_factures
+
+    description: "Une ligne par facture ou avoir, avec son paiement. Les factures orphelines (sans commande) sont exclues, elles restent en quarantaine."
     config:
       meta:
         row_access: agence_id
@@ -111,6 +121,8 @@ models:
               config: {where: "type_document = 'facture'"}
 
   - name: agg_ca_marge_mensuel
+
+    description: "Chiffre d'affaires et marge brute par mois, agence et famille de produits (pilotage commercial)."
     config:
       meta:
         row_access: agence_id
@@ -126,6 +138,8 @@ models:
               arguments: {min_value: -1, max_value: 1}
 
   - name: agg_taux_service
+
+    description: "Taux de service : quantité livrée sur quantité commandée, par mois, agence, famille et fournisseur."
     config:
       meta:
         row_access: agence_id
@@ -136,6 +150,8 @@ models:
               arguments: {min_value: 0, max_value: 1}
 
   - name: agg_performance_fournisseurs
+
+    description: "Performance des fournisseurs sur les commandes d'achat reçues : délai moyen, retard moyen, part livrée à l'heure, montant acheté, par mois."
     tests:
       - unique_combination:
           arguments:
@@ -152,6 +168,8 @@ models:
             columns: [client_id, agence_id]
 
   - name: agg_dso_mensuel
+
+    description: "DSO par mois et par agence : encours clients en fin de mois rapporté au CA TTC des 90 derniers jours."
     config:
       meta:
         row_access: agence_id
